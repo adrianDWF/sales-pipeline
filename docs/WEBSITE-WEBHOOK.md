@@ -2,6 +2,30 @@
 
 Connect your public website contact form to the production API so submissions appear in **Leads**.
 
+## Framer form (DWF website)
+
+In Framer → Form → **Send To → Webhook**:
+
+| Field | Value |
+|-------|--------|
+| **API** | `https://sales-pipeline-api-one.vercel.app/webhooks/framer` |
+| **Secret** | Copy `LEAD_WEBHOOK_SECRET` from `apps/api/.env` (or Vercel → sales-pipeline-api → Environment Variables). Must be at least 32 characters. |
+| **Fallback** | Your email (e.g. `stefan@dwf.ro`) — Framer notifies you if the webhook fails |
+
+**Important:** In Framer, set each input's **name** (not the label) to something we can map:
+
+- Name field → `name`
+- Email → `email`
+- Phone → `phone`
+- Website URL → `website`
+- Message → `message`
+
+Framer signs requests with `Framer-Signature` — do **not** use the generic `/webhooks/leads` URL (that one expects `Authorization: Bearer`).
+
+---
+
+## Generic webhook (curl, custom backend)
+
 ## Production endpoint
 
 ```
