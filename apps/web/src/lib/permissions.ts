@@ -151,3 +151,18 @@ export async function requirePermission(key: PermissionKey): Promise<CurrentUser
 
   return access;
 }
+
+export function isSuperUser(access: CurrentUserAccess): boolean {
+  return (
+    access.profile.is_system_admin ||
+    access.assignedRoles.some((role) => role.slug === "super-admin")
+  );
+}
+
+export async function requireSuperUser(): Promise<CurrentUserAccess> {
+  const access = await requirePermission("portfolio");
+  if (!isSuperUser(access)) {
+    throw new Error("Super user access required");
+  }
+  return access;
+}

@@ -9,6 +9,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Shield,
+  StickyNote,
   Users,
   UserCog,
   LayoutGrid,
@@ -35,6 +36,7 @@ const workspaceNav: {
 
 const adminNav = [
   { href: "/admin/overview", key: "adminOverview", icon: LayoutGrid, systemAdminOnly: true },
+  { href: "/admin/notes", key: "leadNotes", icon: StickyNote, systemAdminOnly: true },
   { href: "/admin/users", key: "users", icon: Users },
   { href: "/admin/roles", key: "roleManagement", icon: UserCog },
 ];

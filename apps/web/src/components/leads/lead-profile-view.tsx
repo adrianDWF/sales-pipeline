@@ -19,10 +19,14 @@ export function LeadProfileView({
   lead,
   assignableUsers,
   canManageAll,
+  currentUserId,
+  isSuperUser: canManageNotesAsSuperUser,
 }: {
   lead: LeadDetail;
   assignableUsers: AssignableUser[];
   canManageAll: boolean;
+  currentUserId: string;
+  isSuperUser: boolean;
 }) {
   const status = lead.status as LeadStatus;
   const tasks = lead.lead_tasks ?? [];
@@ -53,7 +57,12 @@ export function LeadProfileView({
               />
             </TabsContent>
             <TabsContent value="notes" className="mt-4">
-              <LeadNotesPanel leadId={lead.id} notes={lead.lead_notes ?? []} />
+              <LeadNotesPanel
+                leadId={lead.id}
+                notes={lead.lead_notes ?? []}
+                currentUserId={currentUserId}
+                isSuperUser={canManageNotesAsSuperUser}
+              />
             </TabsContent>
             <TabsContent value="meetings" className="mt-4">
               <LeadMeetingsPanel leadId={lead.id} meetings={lead.lead_meetings ?? []} />

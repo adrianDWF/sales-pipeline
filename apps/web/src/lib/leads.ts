@@ -41,7 +41,7 @@ const LEAD_DETAIL_SELECT = `
   ${LEAD_SELECT},
   lead_services ( id, lead_id, service_name, budget_amount, currency, created_at, updated_at ),
   lead_tasks ( id, lead_id, stage, title, completed, sort_order, created_at, updated_at ),
-  lead_notes ( id, lead_id, author_id, body, created_at, updated_at ),
+  lead_notes ( id, lead_id, author_id, body, created_at, updated_at, deleted_at, deleted_by ),
   lead_meetings ( id, lead_id, author_id, title, scheduled_at, notes, created_at, updated_at ),
   lead_offers ( id, lead_id, author_id, title, amount, currency, status, notes, created_at, updated_at ),
   lead_legal ( id, lead_id, author_id, title, status, notes, created_at, updated_at )
@@ -177,6 +177,29 @@ export async function getLeadById(id: string): Promise<LeadDetail | null> {
   if (!data) return null;
 
   const row = data as Record<string, unknown>;
+  const rawNotes = (row.lead_notes as Record<string, unknown>[] | null) ?? [];
+  const authorIds = [
+    ...new Set(
+      rawNotes
+        .map((note) => note.author_id)
+        .filter((id): id is string => typeof id === "string" && id.length > 0),
+    ),
+  ];
+
+  let authorsById = new Map<string, { full_name: string | null; email: string | null }>();
+  if (authorIds.length > 0) {
+    const { data: authors } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", authorIds);
+    authorsById = new Map(
+      (authors ?? []).map((author) => [
+        author.id,
+        { full_name: author.full_name, email: author.email },
+      ]),
+    );
+  }
+
   return LeadDetailSchema.parse({
     ...row,
     deal_value: row.deal_value != null ? Number(row.deal_value) : null,
@@ -187,6 +210,11 @@ export async function getLeadById(id: string): Promise<LeadDetail | null> {
     lead_offers: (row.lead_offers as Record<string, unknown>[] | null)?.map((o) => ({
       ...o,
       amount: o.amount != null ? Number(o.amount) : null,
+    })),
+    lead_notes: rawNotes.map((note) => ({
+      ...note,
+      author:
+        typeof note.author_id === "string" ? (authorsById.get(note.author_id) ?? null) : null,
     })),
   });
 }

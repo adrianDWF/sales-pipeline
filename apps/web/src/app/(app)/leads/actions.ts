@@ -10,9 +10,41 @@ import {
   type LeadStatus,
 } from "@sales-pipeline/shared";
 
-import { requirePermission } from "@/lib/permissions";
+import { requirePermission, isSuperUser, type CurrentUserAccess } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { fetchTermeneCompany, normalizeCuiInput } from "@/lib/termene";
+
+async function canViewLead(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  leadId: string,
+  userId: string,
+  canManageAll: boolean,
+) {
+  if (canManageAll) return true;
+  const { data: lead } = await supabase
+    .from("leads")
+    .select("assigned_to")
+    .eq("id", leadId)
+    .maybeSingle();
+  return Boolean(lead && (lead.assigned_to === userId || lead.assigned_to === null));
+}
+
+async function canManageLeadNote(
+  access: CurrentUserAccess,
+  authorId: string | null,
+) {
+  return isSuperUser(access) || authorId === access.profile.id;
+}
+
+async function getLeadNoteContext(noteId: string) {
+  const supabase = await createClient();
+  const { data: note } = await supabase
+    .from("lead_notes")
+    .select("id, lead_id, author_id, deleted_at")
+    .eq("id", noteId)
+    .maybeSingle();
+  return { supabase, note };
+}
 
 async function canEditLead(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -252,8 +284,8 @@ export async function addLeadNoteAction(leadId: string, body: string) {
   const supabase = await createClient();
   const canManageAll = access.permissions.clients_manage;
 
-  if (!(await canEditLead(supabase, leadId, access.profile.id, canManageAll))) {
-    return { error: "You cannot update this lead" };
+  if (!(await canViewLead(supabase, leadId, access.profile.id, canManageAll))) {
+    return { error: "You cannot add notes to this lead" };
   }
 
   const { error } = await supabase.from("lead_notes").insert({
@@ -264,6 +296,85 @@ export async function addLeadNoteAction(leadId: string, body: string) {
 
   if (error) return { error: error.message };
   revalidateLeadPaths(leadId);
+  return { ok: true };
+}
+
+export async function updateLeadNoteAction(noteId: string, body: string) {
+  const access = await requirePermission("portfolio");
+  const { supabase, note } = await getLeadNoteContext(noteId);
+
+  if (!note) return { error: "Note not found" };
+  if (note.deleted_at) return { error: "Deleted notes cannot be edited" };
+  if (!(await canManageLeadNote(access, note.author_id))) {
+    return { error: "You cannot edit this note" };
+  }
+
+  const { error } = await supabase
+    .from("lead_notes")
+    .update({ body: body.trim() })
+    .eq("id", noteId);
+
+  if (error) return { error: error.message };
+  revalidateLeadPaths(note.lead_id);
+  revalidatePath("/admin/notes");
+  return { ok: true };
+}
+
+export async function softDeleteLeadNoteAction(noteId: string) {
+  const access = await requirePermission("portfolio");
+  const { supabase, note } = await getLeadNoteContext(noteId);
+
+  if (!note) return { error: "Note not found" };
+  if (note.deleted_at) return { error: "Note is already deleted" };
+  if (!(await canManageLeadNote(access, note.author_id))) {
+    return { error: "You cannot delete this note" };
+  }
+
+  const { error } = await supabase
+    .from("lead_notes")
+    .update({
+      deleted_at: new Date().toISOString(),
+      deleted_by: access.profile.id,
+    })
+    .eq("id", noteId);
+
+  if (error) return { error: error.message };
+  revalidateLeadPaths(note.lead_id);
+  revalidatePath("/admin/notes");
+  return { ok: true };
+}
+
+export async function restoreLeadNoteAction(noteId: string) {
+  const access = await requirePermission("portfolio");
+  if (!isSuperUser(access)) return { error: "Super user access required" };
+
+  const { supabase, note } = await getLeadNoteContext(noteId);
+  if (!note) return { error: "Note not found" };
+  if (!note.deleted_at) return { error: "Note is not deleted" };
+
+  const { error } = await supabase
+    .from("lead_notes")
+    .update({ deleted_at: null, deleted_by: null })
+    .eq("id", noteId);
+
+  if (error) return { error: error.message };
+  revalidateLeadPaths(note.lead_id);
+  revalidatePath("/admin/notes");
+  return { ok: true };
+}
+
+export async function permanentDeleteLeadNoteAction(noteId: string) {
+  const access = await requirePermission("portfolio");
+  if (!isSuperUser(access)) return { error: "Super user access required" };
+
+  const { supabase, note } = await getLeadNoteContext(noteId);
+  if (!note) return { error: "Note not found" };
+
+  const { error } = await supabase.from("lead_notes").delete().eq("id", noteId);
+  if (error) return { error: error.message };
+
+  revalidateLeadPaths(note.lead_id);
+  revalidatePath("/admin/notes");
   return { ok: true };
 }
 

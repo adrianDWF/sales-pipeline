@@ -9,6 +9,7 @@ export const ro: Dictionary = {
     seo: "SEO",
     admin: "Admin",
     adminOverview: "Prezentare admin",
+    leadNotes: "Notițe lead",
     syncOperations: "Operațiuni sync",
     agencyTracker: "Agency Tracker",
     pendingStuff: "De configurat",

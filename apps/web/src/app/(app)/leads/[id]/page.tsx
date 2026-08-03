@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { LeadProfileView } from "@/components/leads/lead-profile-view";
 import { getAssignableUsers, getLeadById } from "@/lib/leads";
-import { getCurrentUserAccess } from "@/lib/permissions";
+import { getCurrentUserAccess, isSuperUser } from "@/lib/permissions";
 
 export default async function LeadProfilePage({
   params,
@@ -26,6 +26,8 @@ export default async function LeadProfilePage({
       lead={lead}
       assignableUsers={assignableUsers}
       canManageAll={access.permissions.clients_manage}
+      currentUserId={access.profile.id}
+      isSuperUser={isSuperUser(access)}
     />
   );
 }

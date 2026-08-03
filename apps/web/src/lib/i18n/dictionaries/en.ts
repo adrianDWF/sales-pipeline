@@ -7,6 +7,7 @@ export const en = {
     seo: "SEO",
     admin: "Admin",
     adminOverview: "Admin Overview",
+    leadNotes: "Lead notes",
     syncOperations: "Sync operations",
     agencyTracker: "Agency Tracker",
     pendingStuff: "Pending stuff",

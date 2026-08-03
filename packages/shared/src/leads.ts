@@ -161,6 +161,11 @@ export const LeadTaskSchema = z.object({
 });
 export type LeadTask = z.infer<typeof LeadTaskSchema>;
 
+export const LeadNoteAuthorSchema = z.object({
+  full_name: z.string().nullable(),
+  email: z.string().nullable(),
+});
+
 export const LeadNoteSchema = z.object({
   id: z.string().uuid(),
   lead_id: z.string().uuid(),
@@ -168,8 +173,23 @@ export const LeadNoteSchema = z.object({
   body: z.string(),
   created_at: z.string(),
   updated_at: z.string(),
+  deleted_at: z.string().nullable().optional(),
+  deleted_by: z.string().uuid().nullable().optional(),
+  author: LeadNoteAuthorSchema.nullable().optional(),
 });
 export type LeadNote = z.infer<typeof LeadNoteSchema>;
+export type LeadNoteAuthor = z.infer<typeof LeadNoteAuthorSchema>;
+
+export const AdminLeadNoteSchema = LeadNoteSchema.extend({
+  lead: z
+    .object({
+      company: z.string().nullable(),
+      name: z.string(),
+    })
+    .nullable()
+    .optional(),
+});
+export type AdminLeadNote = z.infer<typeof AdminLeadNoteSchema>;
 
 export const LeadMeetingSchema = z.object({
   id: z.string().uuid(),
