@@ -1,0 +1,24 @@
+{
+  "name": "sales-pipeline",
+  "private": true,
+  "scripts": {
+    "dev:local": "COREPACK_ENABLE_STRICT=0 ./scripts/dev-local.sh",
+    "dev": "turbo dev",
+    "dev:web": "pnpm --filter @sales-pipeline/web dev",
+    "dev:api": "pnpm --filter @sales-pipeline/api dev",
+    "setup": "pnpm install && cp -n .env.example apps/web/.env.local 2>/dev/null || true && cp -n apps/api/.env.example apps/api/.env 2>/dev/null || true",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "test": "pnpm test:unit",
+    "test:unit": "pnpm --filter @sales-pipeline/shared test && pnpm --filter @sales-pipeline/credentials test && pnpm --filter @sales-pipeline/api test"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.4",
+    "typescript": "^5.8.3"
+  },
+  "packageManager": "pnpm@10.12.4",
+  "engines": {
+    "node": ">=20"
+  }
+}

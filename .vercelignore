@@ -1,0 +1,14 @@
+# Not needed for Vercel builds
+docs/
+.cursor/
+/supabase/
+apps/worker/
+
+# Tests
+**/*.test.ts
+**/*.test.tsx
+
+# Local artifacts
+**/.next/
+**/dist/
+node_modules/
