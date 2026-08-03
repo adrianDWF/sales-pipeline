@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 
 import { LeadWebhookPayloadSchema, buildDefaultTasksForStage, type LeadWebhookPayload } from "@sales-pipeline/shared";
 
@@ -64,40 +64,7 @@ async function saveLead(payload: LeadWebhookPayload, rawBody: Record<string, unk
   return { ok: true as const, id: data.id, duplicate: false };
 }
 
-webhooks.post("/leads", async (c) => {
-  const secret = process.env.LEAD_WEBHOOK_SECRET;
-  if (!secret) {
-    return messageResponse(c, 503, "Lead webhook is not configured");
-  }
-
-  const auth = c.req.header("Authorization");
-  if (auth !== `Bearer ${secret}`) {
-    return messageResponse(c, 401, "Unauthorized");
-  }
-
-  const limit = checkRateLimit(
-    rateLimitKey("webhook:leads", c.req.header("x-forwarded-for") ?? "unknown"),
-    60,
-    60 * 1000,
-  );
-  if (!limit.allowed) {
-    return messageResponse(c, 429, "Too many requests");
-  }
-
-  const body = await c.req.json().catch(() => null);
-  const parsed = LeadWebhookPayloadSchema.safeParse(body);
-  if (!parsed.success) {
-    return messageResponse(c, 400, "Invalid lead payload");
-  }
-
-  try {
-    return c.json(await saveLead(parsed.data, (body as Record<string, unknown>) ?? {}));
-  } catch {
-    return messageResponse(c, 500, "Failed to save lead");
-  }
-});
-
-webhooks.post("/framer", async (c) => {
+async function handleFramerWebhook(c: Context) {
   const secret = process.env.FRAMER_WEBHOOK_SECRET ?? process.env.LEAD_WEBHOOK_SECRET;
   if (!secret) {
     return messageResponse(c, 503, "Framer webhook is not configured");
@@ -142,6 +109,46 @@ webhooks.post("/framer", async (c) => {
   } catch {
     return messageResponse(c, 500, "Failed to save lead");
   }
+}
+
+webhooks.post("/leads", async (c) => {
+  // Framer sends Framer-Signature, not Authorization: Bearer — accept both URLs.
+  if (c.req.header("Framer-Webhook-Submission-Id")) {
+    return handleFramerWebhook(c);
+  }
+
+  const secret = process.env.LEAD_WEBHOOK_SECRET;
+  if (!secret) {
+    return messageResponse(c, 503, "Lead webhook is not configured");
+  }
+
+  const auth = c.req.header("Authorization");
+  if (auth !== `Bearer ${secret}`) {
+    return messageResponse(c, 401, "Unauthorized");
+  }
+
+  const limit = checkRateLimit(
+    rateLimitKey("webhook:leads", c.req.header("x-forwarded-for") ?? "unknown"),
+    60,
+    60 * 1000,
+  );
+  if (!limit.allowed) {
+    return messageResponse(c, 429, "Too many requests");
+  }
+
+  const body = await c.req.json().catch(() => null);
+  const parsed = LeadWebhookPayloadSchema.safeParse(body);
+  if (!parsed.success) {
+    return messageResponse(c, 400, "Invalid lead payload");
+  }
+
+  try {
+    return c.json(await saveLead(parsed.data, (body as Record<string, unknown>) ?? {}));
+  } catch {
+    return messageResponse(c, 500, "Failed to save lead");
+  }
 });
+
+webhooks.post("/framer", handleFramerWebhook);
 
 export { webhooks };
