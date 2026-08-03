@@ -12,6 +12,7 @@ import {
 
 import { requirePermission } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
+import { fetchTermeneCompany, normalizeCuiInput } from "@/lib/termene";
 
 async function canEditLead(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -416,4 +417,19 @@ export async function deleteLeadLegalAction(legalId: string) {
   if (error) return { error: error.message };
   revalidateLeadPaths(row.lead_id);
   return { ok: true };
+}
+
+export async function lookupTermeneCompanyAction(cuiInput: string) {
+  await requirePermission("portfolio");
+
+  const cui = normalizeCuiInput(cuiInput);
+  if (!cui) return { error: "Introdu un CUI valid" };
+
+  try {
+    const company = await fetchTermeneCompany(cui);
+    return { ok: true, company };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Termene lookup failed";
+    return { error: message };
+  }
 }

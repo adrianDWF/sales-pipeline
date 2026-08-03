@@ -10,7 +10,9 @@ import {
   updateLeadAction,
   upsertLeadServicesAction,
 } from "@/app/(app)/leads/actions";
+import { LeadCuiField } from "@/components/leads/lead-cui-field";
 import type { AssignableUser } from "@/lib/leads";
+import type { TermeneCompanyLookup } from "@/lib/termene-types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -114,6 +116,13 @@ export function LeadProfileForm({
     });
   }
 
+  function applyTermeneData(data: TermeneCompanyLookup) {
+    setCui(data.cui);
+    if (data.name) setCompany(data.name);
+    if (data.website) setWebsiteUrl(data.website);
+    if (data.phone && !phone.trim()) setPhone(data.phone);
+  }
+
   return (
     <div className="space-y-6">
       <section className="space-y-4">
@@ -134,9 +143,9 @@ export function LeadProfileForm({
           <Field label="Telefon">
             <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
           </Field>
-          <Field label="CUI firmă">
-            <Input value={cui} onChange={(e) => setCui(e.target.value)} />
-          </Field>
+          <div className="sm:col-span-2">
+            <LeadCuiField cui={cui} onCuiChange={setCui} onApply={applyTermeneData} />
+          </div>
         </div>
         <Field label="Mesaj / detalii">
           <Textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={4} />
