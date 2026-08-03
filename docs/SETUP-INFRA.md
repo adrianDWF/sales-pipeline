@@ -76,7 +76,7 @@ Files:
 | Project | Team | URL (after first deploy) |
 |---------|------|-------------------------|
 | `sales-pipeline-web` | dwf2026 | https://sales-pipeline-web.vercel.app |
-| `sales-pipeline-api` | dwf2026 | https://sales-pipeline-api.vercel.app |
+| `sales-pipeline-api` | dwf2026 | https://sales-pipeline-api-one.vercel.app |
 
 ### Connect GitHub (one-time, dashboard)
 
@@ -98,7 +98,7 @@ Web minimum:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `NEXT_PUBLIC_APP_URL=https://sales-pipeline-web.vercel.app`
-- `NEXT_PUBLIC_API_URL=https://sales-pipeline-api.vercel.app`
+- `NEXT_PUBLIC_API_URL=https://sales-pipeline-api-one.vercel.app`
 - `SUPABASE_SERVICE_ROLE_KEY` (server actions / admin)
 
 API minimum:

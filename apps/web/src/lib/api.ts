@@ -3,7 +3,7 @@ import { readApiErrorMessage } from "./api-error";
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ??
   (process.env.NODE_ENV === "production"
-    ? "https://sales-pipeline-api.vercel.app"
+    ? "https://sales-pipeline-api-one.vercel.app"
     : "http://localhost:4000");
 
 export async function apiFetch<T>(

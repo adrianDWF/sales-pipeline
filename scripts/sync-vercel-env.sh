@@ -36,7 +36,7 @@ echo "Setting env on ${WEB_PROJECT}..."
 add_env "$WEB_PROJECT" "NEXT_PUBLIC_SUPABASE_URL" "$SUPABASE_URL"
 add_env "$WEB_PROJECT" "NEXT_PUBLIC_SUPABASE_ANON_KEY" "$ANON"
 add_env "$WEB_PROJECT" "NEXT_PUBLIC_APP_URL" "https://sales-pipeline-web.vercel.app"
-add_env "$WEB_PROJECT" "NEXT_PUBLIC_API_URL" "https://sales-pipeline-api.vercel.app"
+add_env "$WEB_PROJECT" "NEXT_PUBLIC_API_URL" "https://sales-pipeline-api-one.vercel.app"
 add_env "$WEB_PROJECT" "SUPABASE_SERVICE_ROLE_KEY" "$SERVICE"
 
 echo "Setting env on ${API_PROJECT}..."

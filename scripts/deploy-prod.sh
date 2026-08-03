@@ -25,6 +25,8 @@ run_api() {
   $VERCEL_CLI "${DEPLOY_FLAGS[@]}" --project sales-pipeline-api >"$API_LOG" 2>&1
 }
 
+# Deploy from monorepo root — Vercel project rootDirectory is apps/web | apps/api.
+
 if [[ "$PARALLEL" == "1" ]]; then
   echo "==> Deploying web + API in parallel (set DEPLOY_PARALLEL=0 for sequential)"
   run_web &
@@ -57,4 +59,4 @@ if [[ "$WEB_OK" -ne 0 || "$API_OK" -ne 0 ]]; then
 fi
 
 echo ""
-echo "==> Done. Web: https://sales-pipeline-web.vercel.app  API: https://sales-pipeline-api.vercel.app"
+echo "==> Done. Web: https://sales-pipeline-web.vercel.app  API: https://sales-pipeline-api-one.vercel.app"

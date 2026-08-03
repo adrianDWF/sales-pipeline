@@ -118,3 +118,5 @@ curl -X POST http://localhost:4000/webhooks/leads \
 ```
 
 Then open http://localhost:3000/leads to see the lead.
+
+Production webhook: see [docs/WEBSITE-WEBHOOK.md](docs/WEBSITE-WEBHOOK.md) (`https://sales-pipeline-api-one.vercel.app/webhooks/leads`).
