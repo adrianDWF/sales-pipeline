@@ -202,7 +202,7 @@ export function AppSidebar({
   return (
     <aside
       className={cn(
-        "bg-sidebar flex h-full shrink-0 flex-col overflow-hidden border-r transition-[width] duration-200",
+        "bg-background flex h-full shrink-0 flex-col overflow-hidden border-r transition-[width] duration-200",
         collapsed ? "w-[72px]" : "w-60",
       )}
     >

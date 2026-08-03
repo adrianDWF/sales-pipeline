@@ -67,7 +67,7 @@ export function AppShell({
 
         <div className="flex h-svh min-w-0 flex-1 flex-col overflow-hidden">
           <AppTopNav user={initialUser} />
-          <main className="min-h-0 flex-1 overflow-y-auto p-4 md:p-5">{children}</main>
+          <main className="bg-sidebar min-h-0 flex-1 overflow-y-auto p-4 md:p-5">{children}</main>
         </div>
       </div>
     </UserPreferencesProvider>
