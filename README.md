@@ -93,7 +93,7 @@ CI runs on push/PR to `main`: typecheck → lint → build → test.
 | Phase | Status | Scope |
 |-------|--------|--------|
 | **0** | Done | Monorepo scaffold, auth shell, admin roles, webhook stub |
-| **1** | Next | `leads` table, form ingestion, leads UI |
+| **1** | Done (apply migration) | `leads` table, webhook → DB, leads list UI |
 | **2** | Planned | Assignment rules, notifications |
 | **3** | Planned | Gmail OAuth + thread linking |
 
@@ -101,11 +101,20 @@ CI runs on push/PR to `main`: typecheck → lint → build → test.
 
 This repo was bootstrapped by **copying** from Insuite_apps. The Insuite repository at `/Users/adrste23/Documents/insuite-site/Insuite_apps` was **not modified**. All changes live only in this repo with separate infrastructure.
 
-## Webhook test (Phase 0 stub)
+## Apply Phase 1 migration
+
+Run in Supabase **SQL Editor**:
+
+`supabase/migrations/20260803120000_leads.sql`
+
+## Webhook test
 
 ```bash
+source apps/api/.env
 curl -X POST http://localhost:4000/webhooks/leads \
-  -H "Authorization: Bearer YOUR_LEAD_WEBHOOK_SECRET" \
+  -H "Authorization: Bearer $LEAD_WEBHOOK_SECRET" \
   -H "Content-Type: application/json" \
-  -d '{"name":"Jane Doe","email":"jane@example.com","message":"Interested in pricing"}'
+  -d '{"name":"Jane Doe","email":"jane@example.com","message":"Interested in pricing","external_id":"test-001"}'
 ```
+
+Then open http://localhost:3000/leads to see the lead.

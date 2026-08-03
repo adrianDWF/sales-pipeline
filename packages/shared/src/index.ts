@@ -1703,3 +1703,21 @@ export {
   type ApiMessageResponse,
   type ApiOkResponse,
 } from "./api-response.js";
+
+export {
+  LEAD_STATUSES,
+  LeadAssigneeSchema,
+  LeadSchema,
+  LeadStatusSchema,
+  LeadWebhookPayloadSchema,
+  LeadWithAssigneeSchema,
+  UpdateLeadSchema,
+  summarizeLeads,
+  type Lead,
+  type LeadAssignee,
+  type LeadStatus,
+  type LeadSummary,
+  type LeadWebhookPayload,
+  type LeadWithAssignee,
+  type UpdateLeadInput,
+} from "./leads.js";

@@ -43,13 +43,14 @@ trap cleanup EXIT INT TERM
 echo "Starting web and API in parallel..."
 (
   cd apps/web
-  COREPACK_ENABLE_STRICT=0 pnpm dev
+  # Pin port so a prior `source apps/api/.env` (PORT=4000) cannot hijack Next.js.
+  PORT=3000 COREPACK_ENABLE_STRICT=0 pnpm dev
 ) &
 WEB_PID=$!
 
 (
   cd apps/api
-  COREPACK_ENABLE_STRICT=0 pnpm dev
+  PORT=4000 COREPACK_ENABLE_STRICT=0 pnpm dev
 ) &
 API_PID=$!
 
