@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 
-import { LeadWebhookPayloadSchema, type LeadWebhookPayload } from "@sales-pipeline/shared";
+import { LeadWebhookPayloadSchema, buildDefaultTasksForStage, type LeadWebhookPayload } from "@sales-pipeline/shared";
 
 import { messageResponse } from "../lib/api-response.js";
 import { mapFramerFormToLead, verifyFramerSignature } from "../lib/framer-webhook.js";
@@ -21,7 +21,7 @@ async function saveLead(payload: LeadWebhookPayload, rawBody: Record<string, unk
     source: payload.source?.trim() || "website",
     external_id: payload.external_id?.trim() || null,
     form_payload: payload.form_payload ?? rawBody,
-    status: "new" as const,
+    status: "new_lead" as const,
   };
 
   if (row.external_id) {
@@ -49,6 +49,16 @@ async function saveLead(payload: LeadWebhookPayload, rawBody: Record<string, unk
     }
     console.error("Lead webhook insert failed:", error.message);
     throw error;
+  }
+
+  const defaultTasks = buildDefaultTasksForStage("new_lead").map((task) => ({
+    ...task,
+    lead_id: data.id,
+  }));
+
+  const { error: tasksError } = await admin.from("lead_tasks").insert(defaultTasks);
+  if (tasksError) {
+    console.error("Lead webhook default tasks insert failed:", tasksError.message);
   }
 
   return { ok: true as const, id: data.id, duplicate: false };

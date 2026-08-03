@@ -7,6 +7,17 @@ export async function updateSession(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+  // Supabase sometimes lands OAuth on /?code= instead of /auth/callback?code=
+  const oauthCode = request.nextUrl.searchParams.get("code");
+  if (oauthCode && request.nextUrl.pathname === "/") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/callback";
+    if (!url.searchParams.has("redirect")) {
+      url.searchParams.set("redirect", "/dashboard");
+    }
+    return NextResponse.redirect(url);
+  }
+
   if (!supabaseUrl || !supabaseAnonKey) {
     return NextResponse.next({ request });
   }

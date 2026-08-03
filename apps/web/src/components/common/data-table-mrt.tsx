@@ -1,16 +1,19 @@
 "use client";
 
 import type { TableCellProps } from "@mui/material";
+import { Search } from "lucide-react";
 import {
   MaterialReactTable,
   type MRT_ColumnDef,
   type MRT_RowData,
+  type MRT_TableInstance,
   type MRT_TableOptions,
   useMaterialReactTable,
 } from "material-react-table";
 
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
+import { Input } from "@/components/ui/input";
 import { useClientMounted } from "@/hooks/use-client-mounted";
 import { cn } from "@/lib/utils";
 
@@ -54,6 +57,28 @@ const bodyCellClassName = "border-border! text-sm! align-middle!";
 
 const pinnedCellClassName = "bg-card!";
 
+/** MUI v9 + material-react-table still pass deprecated InputProps to TextField. */
+function MrtGlobalFilterInput<TData extends MRT_RowData>({
+  table,
+}: {
+  table: MRT_TableInstance<TData>;
+}) {
+  const value = String(table.getState().globalFilter ?? "");
+
+  return (
+    <div className="relative min-w-0 md:min-w-60">
+      <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
+      <Input
+        aria-label="Search rows"
+        className="pl-8"
+        placeholder="Search rows"
+        value={value}
+        onChange={(event) => table.setGlobalFilter(event.target.value)}
+      />
+    </div>
+  );
+}
+
 /** MRT calls MUI lighten/darken on these — must be parseable colors, never CSS variables. */
 const mrtThemeColors = {
   baseBackgroundColor: "#ffffff",
@@ -88,11 +113,6 @@ export function getMrtSurfaceProps<TData extends MRT_RowData>(
       shape: "rounded",
       showRowsPerPage: true,
       variant: "outlined",
-    },
-    muiSearchTextFieldProps: {
-      placeholder: "Search rows",
-      size: "small",
-      className: "min-w-0 md:min-w-60",
     },
     muiTableBodyCellProps: ({ cell, column, table }) => ({
       align: resolveColumnAlign(cell.column.columnDef.meta),
@@ -204,6 +224,15 @@ function DataTableMRTClient<TData extends MRT_RowData>({
     muiTableBodyRowProps,
     onPaginationChange,
     positionActionsColumn: "last",
+    positionGlobalFilter: enableGlobalFilter ? "none" : undefined,
+    renderTopToolbarCustomActions: enableGlobalFilter
+      ? ({ table }) => (
+          <div className="flex flex-1 flex-wrap items-center gap-2">
+            {renderTopToolbarCustomActions?.({ table })}
+            <MrtGlobalFilterInput table={table} />
+          </div>
+        )
+      : renderTopToolbarCustomActions,
     renderEmptyRowsFallback: () => (
       <div className="px-4 py-12">
         <EmptyState
@@ -214,7 +243,6 @@ function DataTableMRTClient<TData extends MRT_RowData>({
       </div>
     ),
     renderRowActions,
-    renderTopToolbarCustomActions,
     rowCount,
     state: {
       isLoading,

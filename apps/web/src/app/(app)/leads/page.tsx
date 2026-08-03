@@ -1,8 +1,14 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
-import { LeadsTable } from "@/components/leads/leads-table";
 import { PageHeader } from "@/components/common/page-header";
-import { getAssignableUsers, getLeadsForUser } from "@/lib/leads";
+import { LeadsWorkspace } from "@/components/leads/leads-workspace";
+import {
+  getAssignableUsers,
+  getLeadFacets,
+  getLeadsForUser,
+  getPipelineKpis,
+} from "@/lib/leads";
 import { getCurrentUserAccess } from "@/lib/permissions";
 
 export default async function LeadsPage() {
@@ -10,24 +16,28 @@ export default async function LeadsPage() {
   if (!access) redirect("/login?redirect=/leads");
   if (!access.permissions.portfolio) redirect("/permission-approval");
 
-  const [leads, assignableUsers] = await Promise.all([
+  const [leads, assignableUsers, facets, kpis] = await Promise.all([
     getLeadsForUser(access),
-    access.permissions.clients_manage ? getAssignableUsers() : Promise.resolve([]),
+    getAssignableUsers(),
+    getLeadFacets(access),
+    getPipelineKpis(access),
   ]);
 
   return (
     <div className="space-y-5">
       <PageHeader
-        title="Leads"
-        description="Website form submissions and assigned follow-ups."
+        title="Pipeline"
+        description="Sales modules · leads from website and manual entry."
       />
 
-      <LeadsTable
-        leads={leads}
-        assignableUsers={assignableUsers}
-        canManageAll={access.permissions.clients_manage}
-        currentUserId={access.profile.id}
-      />
+      <Suspense fallback={<div className="bg-muted/40 h-96 animate-pulse rounded-xl" />}>
+        <LeadsWorkspace
+          leads={leads}
+          users={assignableUsers}
+          facets={facets}
+          kpis={kpis}
+        />
+      </Suspense>
     </div>
   );
 }

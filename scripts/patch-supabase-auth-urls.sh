@@ -14,7 +14,7 @@ curl -sS -X PATCH "https://api.supabase.com/v1/projects/${PROJECT_REF}/config/au
   -H "Authorization: Bearer ${TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{
-    "site_url": "http://localhost:3000",
+    "site_url": "https://sales-pipeline-web.vercel.app",
     "uri_allow_list": "http://localhost:3000/auth/callback,https://sales-pipeline-web.vercel.app/auth/callback"
   }' | python3 -m json.tool 2>/dev/null || cat
 
