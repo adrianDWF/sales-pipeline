@@ -62,6 +62,7 @@ export type LeadFacets = {
   byOwner: Record<string, number>;
   byStatus: Record<string, number>;
   unassigned: number;
+  newLeadUnassigned: number;
 };
 
 function parseLeadRow(row: Record<string, unknown>): LeadWithAssignee {
@@ -118,17 +119,21 @@ export async function getLeadFacets(_access: CurrentUserAccess): Promise<LeadFac
   const byOwner: Record<string, number> = {};
   const byStatus: Record<string, number> = {};
   let unassigned = 0;
+  let newLeadUnassigned = 0;
 
   for (const lead of leads) {
     byStatus[lead.status] = (byStatus[lead.status] ?? 0) + 1;
     if (!lead.assigned_to) {
       unassigned += 1;
+      if (lead.status === "new_lead") {
+        newLeadUnassigned += 1;
+      }
     } else {
       byOwner[lead.assigned_to] = (byOwner[lead.assigned_to] ?? 0) + 1;
     }
   }
 
-  return { byOwner, byStatus, unassigned };
+  return { byOwner, byStatus, unassigned, newLeadUnassigned };
 }
 
 export async function getPipelineKpis(_access: CurrentUserAccess): Promise<PipelineKpis> {

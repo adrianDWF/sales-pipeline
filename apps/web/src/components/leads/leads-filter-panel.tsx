@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 
 import type { AssignableUser, LeadFacets } from "@/lib/leads";
 
+export type LeadStatusFilter = LeadStatus | "all" | "new_lead_unassigned";
+
 type OwnerFilter = "all" | "unassigned" | string;
 
 export function LeadsFilterPanel({
@@ -19,9 +21,9 @@ export function LeadsFilterPanel({
   users: AssignableUser[];
   facets: LeadFacets;
   ownerFilter: OwnerFilter;
-  statusFilter: LeadStatus | "all";
+  statusFilter: LeadStatusFilter;
   onOwnerChange: (value: OwnerFilter) => void;
-  onStatusChange: (value: LeadStatus | "all") => void;
+  onStatusChange: (value: LeadStatusFilter) => void;
 }) {
   const totalLeads = Object.values(facets.byStatus).reduce((a, b) => a + b, 0);
 
@@ -76,6 +78,12 @@ export function LeadsFilterPanel({
               onClick={() => onStatusChange(stage.status)}
             />
           ))}
+          <FilterRow
+            label="New lead & no owner"
+            count={facets.newLeadUnassigned}
+            active={statusFilter === "new_lead_unassigned"}
+            onClick={() => onStatusChange("new_lead_unassigned")}
+          />
           <FilterRow
             label="Lost"
             count={facets.byStatus.lost ?? 0}

@@ -1,12 +1,15 @@
 "use client";
 
-import type { LeadStatus, LeadWithAssignee, PipelineKpis } from "@sales-pipeline/shared";
+import type { LeadWithAssignee, PipelineKpis } from "@sales-pipeline/shared";
 import { Plus } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { AddLeadDialog } from "@/components/leads/add-lead-dialog";
-import { LeadsFilterPanel } from "@/components/leads/leads-filter-panel";
+import {
+  LeadsFilterPanel,
+  type LeadStatusFilter,
+} from "@/components/leads/leads-filter-panel";
 import { LeadsKpiRow } from "@/components/leads/leads-kpi-row";
 import { LeadsPipelineTable } from "@/components/leads/leads-pipeline-table";
 import { Button } from "@/components/ui/button";
@@ -29,7 +32,7 @@ export function LeadsWorkspace({
   const [addOpen, setAddOpen] = useState(false);
 
   const ownerFilter = searchParams.get("owner") ?? "all";
-  const statusFilter = (searchParams.get("status") ?? "all") as LeadStatus | "all";
+  const statusFilter = (searchParams.get("status") ?? "all") as LeadStatusFilter;
 
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
@@ -37,7 +40,11 @@ export function LeadsWorkspace({
         ownerFilter === "all" ||
         (ownerFilter === "unassigned" && !lead.assigned_to) ||
         lead.assigned_to === ownerFilter;
-      const statusOk = statusFilter === "all" || lead.status === statusFilter;
+      const statusOk =
+        statusFilter === "all" ||
+        (statusFilter === "new_lead_unassigned"
+          ? lead.status === "new_lead" && !lead.assigned_to
+          : lead.status === statusFilter);
       return ownerOk && statusOk;
     });
   }, [leads, ownerFilter, statusFilter]);

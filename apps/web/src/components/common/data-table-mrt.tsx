@@ -10,12 +10,19 @@ import {
   type MRT_TableOptions,
   useMaterialReactTable,
 } from "material-react-table";
+import { useSyncExternalStore } from "react";
 
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
 import { Input } from "@/components/ui/input";
 import { useClientMounted } from "@/hooks/use-client-mounted";
 import { cn } from "@/lib/utils";
+
+export type MrtColumnMeta = {
+  align?: TableCellProps["align"];
+  /** Share of table width when fluid layout is active (default 1). */
+  fluidWeight?: number;
+};
 
 export type DataTableMRTProps<TData extends MRT_RowData> = {
   columns: MRT_ColumnDef<TData>[];
@@ -41,13 +48,25 @@ export type DataTableMRTProps<TData extends MRT_RowData> = {
   getRowId?: MRT_TableOptions<TData>["getRowId"];
   muiTableBodyRowProps?: MRT_TableOptions<TData>["muiTableBodyRowProps"];
   fluidColumnsUntil?: number;
+  /** Enable weighted column widths from column meta.fluidWeight at this min viewport width. */
+  fluidLayoutMinWidth?: number;
   tableOptions?: Partial<MRT_TableOptions<TData>>;
 };
 
-function resolveColumnAlign(meta: unknown): TableCellProps["align"] {
-  return (meta as { align?: TableCellProps["align"] } | undefined)?.align === "right"
-    ? "right"
-    : "left";
+function useMinWidth(minWidth: number) {
+  return useSyncExternalStore(
+    (onStoreChange) => {
+      const media = window.matchMedia(`(min-width: ${minWidth}px)`);
+      media.addEventListener("change", onStoreChange);
+      return () => media.removeEventListener("change", onStoreChange);
+    },
+    () => window.matchMedia(`(min-width: ${minWidth}px)`).matches,
+    () => false,
+  );
+}
+
+function resolveColumnMeta(meta: unknown): MrtColumnMeta {
+  return (meta as MrtColumnMeta | undefined) ?? {};
 }
 
 const headCellClassName =
@@ -90,13 +109,30 @@ const mrtThemeColors = {
 } as const;
 
 export function getMrtSurfaceProps<TData extends MRT_RowData>(
-  fluidColumnsUntil?: number,
-): Partial<
-  MRT_TableOptions<TData>
-> {
-  const getFluidCellSizing = (visibleColumnCount: number) => {
-    if (!fluidColumnsUntil || visibleColumnCount > fluidColumnsUntil) return {};
-    const width = `${100 / Math.max(visibleColumnCount, 1)}%`;
+  options: {
+    fluidColumnsUntil?: number;
+    fluidLayoutActive?: boolean;
+  } = {},
+): Partial<MRT_TableOptions<TData>> {
+  const { fluidColumnsUntil, fluidLayoutActive = false } = options;
+
+  const getFluidCellSizing = (
+    column: { columnDef: { meta?: unknown }; id: string },
+    visibleColumnCount: number,
+    visibleColumns: { columnDef: { meta?: unknown }; id: string }[],
+  ) => {
+    if (!fluidLayoutActive || !fluidColumnsUntil || visibleColumnCount > fluidColumnsUntil) {
+      return {};
+    }
+
+    const weights = visibleColumns.map(
+      (col) => resolveColumnMeta(col.columnDef.meta).fluidWeight ?? 1,
+    );
+    const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+    const columnIndex = visibleColumns.findIndex((col) => col.id === column.id);
+    const weight = weights[columnIndex] ?? 1;
+    const width = `${(weight / totalWeight) * 100}%`;
+
     return { width, minWidth: 0, maxWidth: width };
   };
 
@@ -114,28 +150,34 @@ export function getMrtSurfaceProps<TData extends MRT_RowData>(
       showRowsPerPage: true,
       variant: "outlined",
     },
-    muiTableBodyCellProps: ({ cell, column, table }) => ({
-      align: resolveColumnAlign(cell.column.columnDef.meta),
-      className: cn(
-        bodyCellClassName,
-        column.getIsPinned() ? pinnedCellClassName : undefined,
-      ),
-      sx: getFluidCellSizing(table.getVisibleLeafColumns().length),
-    }),
-    muiTableContainerProps: {
-      className: "max-h-[calc(100vh-22rem)] overflow-auto",
+    muiTableBodyCellProps: ({ cell, column, table }) => {
+      const visibleColumns = table.getVisibleLeafColumns();
+      return {
+        align: resolveColumnMeta(cell.column.columnDef.meta).align === "right" ? "right" : "left",
+        className: cn(
+          bodyCellClassName,
+          column.getIsPinned() ? pinnedCellClassName : undefined,
+        ),
+        sx: getFluidCellSizing(column, visibleColumns.length, visibleColumns),
+      };
     },
-    muiTableHeadCellProps: ({ column, table }) => ({
-      align: resolveColumnAlign(column.columnDef.meta),
-      className: cn(
-        headCellClassName,
-        column.getIsPinned() ? pinnedCellClassName : undefined,
-      ),
-      sx: getFluidCellSizing(table.getVisibleLeafColumns().length),
-    }),
+    muiTableContainerProps: {
+      className: "max-h-[calc(100vh-22rem)] w-full overflow-auto",
+    },
+    muiTableHeadCellProps: ({ column, table }) => {
+      const visibleColumns = table.getVisibleLeafColumns();
+      return {
+        align: resolveColumnMeta(column.columnDef.meta).align === "right" ? "right" : "left",
+        className: cn(
+          headCellClassName,
+          column.getIsPinned() ? pinnedCellClassName : undefined,
+        ),
+        sx: getFluidCellSizing(column, visibleColumns.length, visibleColumns),
+      };
+    },
     muiTablePaperProps: {
       elevation: 0,
-      className: "bg-card border-border overflow-hidden rounded-xl border shadow-none",
+      className: "bg-card border-border w-full overflow-hidden rounded-xl border shadow-none",
     },
     muiTopToolbarProps: {
       className: "bg-card border-border min-h-14 border-b",
@@ -143,7 +185,7 @@ export function getMrtSurfaceProps<TData extends MRT_RowData>(
     muiTableProps: ({ table }) => {
       const visibleColumnCount = table.getVisibleLeafColumns().length;
       const fluid = Boolean(
-        fluidColumnsUntil && visibleColumnCount <= fluidColumnsUntil,
+        fluidLayoutActive && fluidColumnsUntil && visibleColumnCount <= fluidColumnsUntil,
       );
       return {
         sx: {
@@ -195,9 +237,14 @@ function DataTableMRTClient<TData extends MRT_RowData>({
   getRowId,
   muiTableBodyRowProps,
   fluidColumnsUntil,
+  fluidLayoutMinWidth = 1200,
   tableOptions,
 }: DataTableMRTProps<TData>) {
-  const surfaceProps = getMrtSurfaceProps<TData>(fluidColumnsUntil);
+  const fluidLayoutActive = useMinWidth(fluidLayoutMinWidth);
+  const surfaceProps = getMrtSurfaceProps<TData>({
+    fluidColumnsUntil,
+    fluidLayoutActive,
+  });
   const resolvedErrorMessage = errorMessage ?? "Unable to load table data.";
 
   const table = useMaterialReactTable<TData>({
@@ -254,7 +301,7 @@ function DataTableMRTClient<TData extends MRT_RowData>({
   });
 
   return (
-    <div className="space-y-3">
+    <div className="w-full min-w-0 space-y-3">
       {isError ? (
         <ErrorState
           title="Table unavailable"
