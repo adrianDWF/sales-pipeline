@@ -117,8 +117,12 @@ def derive_email(company: str, website: str | None, row_index: int) -> str:
         try:
             host = urlparse(website if "://" in website else f"https://{website}").netloc
             host = host.lower().removeprefix("www.")
-            if host and "." in host:
-                return f"contact@{host}"
+            # Strip zero-width / invisible chars
+            host = re.sub(r"[\u200b-\u200d\ufeff]", "", host)
+            if host and "@" not in host and "." in host and not host.endswith("."):
+                candidate = f"contact@{host}"
+                if re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", candidate):
+                    return candidate
         except Exception:
             pass
     return f"import+{slugify(company)}-{row_index}@placeholder.dwf.ro"
