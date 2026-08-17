@@ -21,6 +21,7 @@ JWT="$(read_env apps/api/.env SUPABASE_JWT_SECRET)"
 OAUTH="$(read_env apps/api/.env OAUTH_STATE_SECRET)"
 TOKEN="$(read_env apps/api/.env TOKEN_ENCRYPTION_KEY)"
 WEBHOOK="$(read_env apps/api/.env LEAD_WEBHOOK_SECRET)"
+CRON="$(read_env apps/api/.env CRON_SECRET)"
 
 add_env() {
   local project="$1"
@@ -50,5 +51,8 @@ add_env "$API_PROJECT" "NEXT_PUBLIC_APP_URL" "https://sales-pipeline-web.vercel.
 add_env "$API_PROJECT" "OAUTH_STATE_SECRET" "$OAUTH"
 add_env "$API_PROJECT" "TOKEN_ENCRYPTION_KEY" "$TOKEN"
 add_env "$API_PROJECT" "LEAD_WEBHOOK_SECRET" "$WEBHOOK"
+if [[ -n "$CRON" ]]; then
+  add_env "$API_PROJECT" "CRON_SECRET" "$CRON"
+fi
 
 echo "Vercel env sync complete."

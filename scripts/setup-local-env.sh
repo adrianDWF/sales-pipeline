@@ -7,6 +7,7 @@ cd "$ROOT"
 TOKEN_KEY="$(openssl rand -base64 32)"
 OAUTH_SECRET="$(openssl rand -hex 32)"
 WEBHOOK_SECRET="$(openssl rand -hex 32)"
+CRON_SECRET="$(openssl rand -hex 32)"
 
 write_web_env() {
   cat > apps/web/.env.local <<EOF
@@ -41,6 +42,7 @@ GOOGLE_REDIRECT_URI=http://localhost:4000/auth/google/callback
 OAUTH_STATE_SECRET=${OAUTH_SECRET}
 TOKEN_ENCRYPTION_KEY=${TOKEN_KEY}
 LEAD_WEBHOOK_SECRET=${WEBHOOK_SECRET}
+CRON_SECRET=${CRON_SECRET}
 EOF
 }
 
@@ -53,6 +55,7 @@ echo "Generated API secrets (saved in apps/api/.env):"
 echo "  OAUTH_STATE_SECRET=${OAUTH_SECRET}"
 echo "  TOKEN_ENCRYPTION_KEY=${TOKEN_KEY}"
 echo "  LEAD_WEBHOOK_SECRET=${WEBHOOK_SECRET}"
+echo "  CRON_SECRET=${CRON_SECRET}"
 echo ""
 echo "Next: create Supabase project, then run:"
 echo "  ./scripts/fill-supabase-env.sh YOUR_PROJECT_REF"

@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 
 import { errorResponse } from "./lib/api-response.js";
 import { logRequestLine } from "./lib/safe-logger.js";
+import { cron } from "./routes/cron.js";
 import { webhooks } from "./routes/webhooks.js";
 
 const app = new Hono();
@@ -64,6 +65,7 @@ app.get("/", (c) =>
 
 app.get("/health", (c) => c.json({ status: "ok" }));
 
+app.route("/cron", cron);
 app.route("/webhooks", webhooks);
 
 app.onError((error, c) => {

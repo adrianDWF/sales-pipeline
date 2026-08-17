@@ -3,6 +3,12 @@
   "installCommand": "cd ../.. && pnpm install --filter @sales-pipeline/api...",
   "buildCommand": "cd ../.. && ./scripts/build-api.sh",
   "framework": "hono",
+  "crons": [
+    {
+      "path": "/cron/keep-alive",
+      "schedule": "0 8 * * *"
+    }
+  ],
   "functions": {
     "src/index.ts": {
       "maxDuration": 60
