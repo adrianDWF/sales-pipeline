@@ -147,6 +147,9 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: ^1.2.12
         version: 1.2.16(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@sales-pipeline/credentials':
+        specifier: workspace:*
+        version: link:../../packages/credentials
       '@sales-pipeline/shared':
         specifier: workspace:*
         version: link:../../packages/shared

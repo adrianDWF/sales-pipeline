@@ -20,8 +20,15 @@ SERVICE="$(read_env apps/api/.env SUPABASE_SERVICE_ROLE_KEY)"
 JWT="$(read_env apps/api/.env SUPABASE_JWT_SECRET)"
 OAUTH="$(read_env apps/api/.env OAUTH_STATE_SECRET)"
 TOKEN="$(read_env apps/api/.env TOKEN_ENCRYPTION_KEY)"
+GOOGLE_ID="$(read_env apps/api/.env GOOGLE_CLIENT_ID)"
+GOOGLE_SECRET="$(read_env apps/api/.env GOOGLE_CLIENT_SECRET)"
+GMAIL_EXCLUDED="$(read_env apps/api/.env GMAIL_EXCLUDED_EMAILS)"
 WEBHOOK="$(read_env apps/api/.env LEAD_WEBHOOK_SECRET)"
 CRON="$(read_env apps/api/.env CRON_SECRET)"
+
+if [[ -z "$GMAIL_EXCLUDED" ]]; then
+  GMAIL_EXCLUDED="adrian@dwf.ro"
+fi
 
 add_env() {
   local project="$1"
@@ -39,6 +46,19 @@ add_env "$WEB_PROJECT" "NEXT_PUBLIC_SUPABASE_ANON_KEY" "$ANON"
 add_env "$WEB_PROJECT" "NEXT_PUBLIC_APP_URL" "https://sales-pipeline-web.vercel.app"
 add_env "$WEB_PROJECT" "NEXT_PUBLIC_API_URL" "https://sales-pipeline-api-one.vercel.app"
 add_env "$WEB_PROJECT" "SUPABASE_SERVICE_ROLE_KEY" "$SERVICE"
+if [[ -n "$GOOGLE_ID" ]]; then
+  add_env "$WEB_PROJECT" "GOOGLE_CLIENT_ID" "$GOOGLE_ID"
+fi
+if [[ -n "$GOOGLE_SECRET" ]]; then
+  add_env "$WEB_PROJECT" "GOOGLE_CLIENT_SECRET" "$GOOGLE_SECRET"
+fi
+if [[ -n "$OAUTH" ]]; then
+  add_env "$WEB_PROJECT" "OAUTH_STATE_SECRET" "$OAUTH"
+fi
+if [[ -n "$TOKEN" ]]; then
+  add_env "$WEB_PROJECT" "TOKEN_ENCRYPTION_KEY" "$TOKEN"
+fi
+add_env "$WEB_PROJECT" "GMAIL_EXCLUDED_EMAILS" "$GMAIL_EXCLUDED"
 
 echo "Setting env on ${API_PROJECT}..."
 add_env "$API_PROJECT" "SUPABASE_URL" "$SUPABASE_URL"

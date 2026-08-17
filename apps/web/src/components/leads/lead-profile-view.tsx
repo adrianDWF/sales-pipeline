@@ -2,7 +2,10 @@
 
 import type { LeadDetail, LeadStatus } from "@sales-pipeline/shared";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
+import { LeadCommunicationsPanel } from "@/components/leads/lead-communications-panel";
 import { LeadLegalPanel } from "@/components/leads/lead-legal-panel";
 import { LeadMeetingsPanel } from "@/components/leads/lead-meetings-panel";
 import { LeadNotesPanel } from "@/components/leads/lead-notes-panel";
@@ -30,6 +33,8 @@ export function LeadProfileView({
 }) {
   const status = lead.status as LeadStatus;
   const tasks = lead.lead_tasks ?? [];
+  const searchParams = useSearchParams();
+  const defaultTab = searchParams.get("tab") === "comunicari" ? "comunicari" : "profil";
 
   return (
     <div className="space-y-5">
@@ -41,13 +46,14 @@ export function LeadProfileView({
         <div className="min-w-0 flex-1 space-y-5">
           <LeadProfileHeader lead={lead} />
 
-          <Tabs defaultValue="profil">
+          <Tabs key={defaultTab} defaultValue={defaultTab}>
             <TabsList>
               <TabsTrigger value="profil">Profil</TabsTrigger>
               <TabsTrigger value="notes">Notes</TabsTrigger>
               <TabsTrigger value="meetings">Meetings</TabsTrigger>
               <TabsTrigger value="offer">Offer</TabsTrigger>
               <TabsTrigger value="legal">Legal</TabsTrigger>
+              <TabsTrigger value="comunicari">Comunicări</TabsTrigger>
             </TabsList>
             <TabsContent value="profil" className="mt-4">
               <LeadProfileForm
@@ -72,6 +78,15 @@ export function LeadProfileView({
             </TabsContent>
             <TabsContent value="legal" className="mt-4">
               <LeadLegalPanel leadId={lead.id} legalItems={lead.lead_legal ?? []} />
+            </TabsContent>
+            <TabsContent value="comunicari" className="mt-4">
+              <Suspense
+                fallback={
+                  <p className="text-muted-foreground text-sm">Se încarcă comunicările…</p>
+                }
+              >
+                <LeadCommunicationsPanel leadId={lead.id} />
+              </Suspense>
             </TabsContent>
           </Tabs>
         </div>

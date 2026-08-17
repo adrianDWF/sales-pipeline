@@ -389,3 +389,24 @@ export function buildDefaultTasksForStage(stage: LeadStatus) {
     sort_order: index,
   }));
 }
+
+export const LeadCommunicationSchema = z.object({
+  id: z.string(),
+  subject: z.string(),
+  from: z.string(),
+  to: z.array(z.string()),
+  date: z.string(),
+  body: z.string(),
+  snippet: z.string().optional(),
+  mailboxEmail: z.string().email(),
+});
+
+export type LeadCommunication = z.infer<typeof LeadCommunicationSchema>;
+
+export const GmailConnectionStatusSchema = z.object({
+  connected: z.boolean(),
+  googleEmail: z.string().email().nullable(),
+  connectedAt: z.string().nullable(),
+});
+
+export type GmailConnectionStatus = z.infer<typeof GmailConnectionStatusSchema>;

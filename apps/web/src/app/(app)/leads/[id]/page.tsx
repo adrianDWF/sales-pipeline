@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { Suspense } from "react";
 
 import { LeadProfileView } from "@/components/leads/lead-profile-view";
 import { getAssignableUsers, getLeadById } from "@/lib/leads";
@@ -22,12 +23,14 @@ export default async function LeadProfilePage({
   if (!lead) notFound();
 
   return (
-    <LeadProfileView
-      lead={lead}
-      assignableUsers={assignableUsers}
-      canManageAll={access.permissions.clients_manage}
-      currentUserId={access.profile.id}
-      isSuperUser={isSuperUser(access)}
-    />
+    <Suspense fallback={<p className="text-muted-foreground text-sm">Se încarcă profilul…</p>}>
+      <LeadProfileView
+        lead={lead}
+        assignableUsers={assignableUsers}
+        canManageAll={access.permissions.clients_manage}
+        currentUserId={access.profile.id}
+        isSuperUser={isSuperUser(access)}
+      />
+    </Suspense>
   );
 }
