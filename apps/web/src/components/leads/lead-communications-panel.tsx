@@ -6,7 +6,7 @@ import type {
   TeamGmailSummary,
 } from "@sales-pipeline/shared";
 import { format } from "date-fns";
-import { CheckCircle2, Circle, Loader2, Mail, Users } from "lucide-react";
+import { CheckCircle2, Loader2, Mail, Users } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
@@ -21,25 +21,6 @@ function formatEmailDate(value: string) {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
   return format(parsed, "d MMM yyyy, HH:mm");
-}
-
-function formatPersonName(fullName: string | null, email: string) {
-  return fullName?.trim() || email;
-}
-
-function gmailNoticeMessage(notice: string) {
-  switch (notice) {
-    case "connected":
-      return null;
-    case "not_configured":
-      return "Integrarea Gmail nu este configurată pe server.";
-    case "excluded_account":
-      return "Contul tău (dev) nu poate sincroniza Gmail. Vei vedea emailurile colegilor după ce își conectează Gmail.";
-    case "missing_refresh_token":
-      return "Google nu a returnat token de reîmprospătare. Încearcă «Reconectează Gmail».";
-    default:
-      return `Eroare Gmail: ${notice}`;
-  }
 }
 
 function EmailCard({ email }: { email: LeadCommunication }) {
@@ -87,45 +68,49 @@ function EmailCard({ email }: { email: LeadCommunication }) {
   );
 }
 
-function TeamGmailStatus({ teamSummary }: { teamSummary: TeamGmailSummary }) {
-  if (teamSummary.connected.length === 0 && teamSummary.pending.length === 0) {
+function TeamGmailStatus({ summary }: { summary: TeamGmailSummary }) {
+  if (summary.connected.length === 0 && summary.pending.length === 0) {
     return null;
   }
 
   return (
-    <div className="bg-muted/40 rounded-xl border p-4">
+    <div className="bg-muted/30 rounded-xl border p-4">
       <div className="mb-3 flex items-center gap-2">
         <Users className="text-muted-foreground size-4" />
-        <p className="text-sm font-medium">Conturi Gmail ale echipei</p>
+        <p className="text-sm font-medium">Gmail echipă</p>
       </div>
-      <ul className="space-y-2 text-sm">
-        {teamSummary.connected.map((mailbox) => (
-          <li key={mailbox.userId} className="flex items-start gap-2">
-            <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600" />
-            <span>
-              <span className="font-medium">
-                {formatPersonName(mailbox.fullName, mailbox.googleEmail)}
-              </span>
-              <span className="text-muted-foreground">
-                {" "}
-                · {mailbox.googleEmail} · conectat {formatEmailDate(mailbox.connectedAt)}
-              </span>
-            </span>
-          </li>
-        ))}
-        {teamSummary.pending.map((member) => (
-          <li key={member.userId} className="flex items-start gap-2">
-            <Circle className="text-muted-foreground mt-0.5 size-4 shrink-0" />
-            <span>
-              <span className="font-medium">{formatPersonName(member.fullName, member.email)}</span>
-              <span className="text-muted-foreground">
-                {" "}
-                · nu a conectat Gmail încă (trebuie să apese «Conectează Gmail» în acest tab)
-              </span>
-            </span>
-          </li>
-        ))}
-      </ul>
+      {summary.connected.length > 0 ? (
+        <div className="mb-3">
+          <p className="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">
+            Conectate ({summary.connected.length})
+          </p>
+          <ul className="space-y-1">
+            {summary.connected.map((member) => (
+              <li key={member.userId} className="flex items-center gap-2 text-sm">
+                <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                <span>
+                  {member.fullName ?? member.googleEmail}
+                  <span className="text-muted-foreground"> · {member.googleEmail}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {summary.pending.length > 0 ? (
+        <div>
+          <p className="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">
+            Neconectate ({summary.pending.length})
+          </p>
+          <ul className="space-y-1">
+            {summary.pending.map((member) => (
+              <li key={member.userId} className="text-muted-foreground text-sm">
+                {member.fullName ?? member.email}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -136,19 +121,18 @@ export function LeadCommunicationsPanel({ leadId }: { leadId: string }) {
   const [communications, setCommunications] = useState<LeadCommunication[]>([]);
   const [warning, setWarning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [canConnectGmail, setCanConnectGmail] = useState(true);
+  const [teamSummary, setTeamSummary] = useState<TeamGmailSummary>({
+    connected: [],
+    pending: [],
+  });
   const [gmailStatus, setGmailStatus] = useState<GmailConnectionStatus>({
     connected: false,
     googleEmail: null,
     connectedAt: null,
   });
-  const [teamSummary, setTeamSummary] = useState<TeamGmailSummary>({
-    connected: [],
-    pending: [],
-  });
-  const [canConnectGmail, setCanConnectGmail] = useState(true);
 
   const gmailNotice = searchParams.get("gmail");
-  const noticeMessage = gmailNotice ? gmailNoticeMessage(gmailNotice) : null;
 
   function loadCommunications() {
     startTransition(async () => {
@@ -182,68 +166,64 @@ export function LeadCommunicationsPanel({ leadId }: { leadId: string }) {
   }, [gmailNotice]);
 
   const connectHref = `/api/auth/gmail/connect?leadId=${encodeURIComponent(leadId)}`;
-  const showEmptyEmails =
-    !isPending && communications.length === 0 && !error && teamSummary.connected.length === 0;
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-        <p className="font-medium">Login cu Google ≠ Conectare Gmail</p>
-        <p className="mt-1">
-          Autentificarea în app (Continue with Google) doar te loghează. Pentru emailuri, fiecare
-          coleg trebuie separat să apese <strong>Conectează Gmail</strong> și să aprobe accesul la
-          Gmail. După conectare, toată echipa vede emailurile relevante lead-ului.
-        </p>
-      </div>
-
-      <TeamGmailStatus teamSummary={teamSummary} />
-
       <div className="bg-muted/40 flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-3">
           <Mail className="text-muted-foreground mt-0.5 size-5 shrink-0" />
           <div>
             <p className="text-sm font-medium">Contul tău Gmail</p>
-            {!canConnectGmail ? (
-              <p className="text-muted-foreground text-sm">
-                Contul tău nu sincronizează Gmail (exclus ca dev). Poți vedea emailurile colegilor
-                după ce își conectează Gmail.
-              </p>
-            ) : gmailStatus.connected ? (
+            {gmailStatus.connected ? (
               <p className="text-muted-foreground text-sm">
                 {gmailStatus.googleEmail}
                 {gmailStatus.connectedAt
                   ? ` · conectat ${formatEmailDate(gmailStatus.connectedAt)}`
                   : null}
               </p>
+            ) : canConnectGmail ? (
+              <p className="text-muted-foreground text-sm">
+                Dacă te-ai logat cu Google, Gmail se conectează automat la prima autentificare.
+                Poți apăsa butonul de mai jos dacă ai refuzat accesul sau folosești alt cont.
+              </p>
             ) : (
               <p className="text-muted-foreground text-sm">
-                Conectează-ți Gmail ca emailurile tale să apară în comunicările echipei.
+                Contul tău nu participă la sincronizarea Gmail a echipei.
               </p>
             )}
           </div>
         </div>
         {canConnectGmail ? (
-          !gmailStatus.connected ? (
-            <Button asChild size="sm" className="shrink-0">
-              <Link href={connectHref}>Conectează Gmail</Link>
-            </Button>
-          ) : (
+          gmailStatus.connected ? (
             <Button variant="outline" size="sm" className="shrink-0" asChild>
               <Link href={connectHref}>Reconectează</Link>
+            </Button>
+          ) : (
+            <Button asChild size="sm" className="shrink-0">
+              <Link href={connectHref}>Conectează Gmail</Link>
             </Button>
           )
         ) : null}
       </div>
 
+      <TeamGmailStatus summary={teamSummary} />
+
       {gmailNotice === "connected" ? (
         <p className="text-sm text-emerald-700">Gmail conectat cu succes.</p>
       ) : null}
-      {noticeMessage ? (
-        <p
-          className={`text-sm ${gmailNotice === "excluded_account" ? "text-amber-800" : "text-destructive"}`}
-        >
-          {noticeMessage}
+      {gmailNotice === "access_denied" ? (
+        <p className="text-muted-foreground text-sm">
+          Acces Gmail refuzat. Poți continua fără sincronizare sau reconecta mai târziu.
         </p>
+      ) : null}
+      {gmailNotice === "not_configured" ? (
+        <p className="text-destructive text-sm">
+          Integrarea Gmail nu este configurată pe server.
+        </p>
+      ) : null}
+      {gmailNotice &&
+      !["connected", "not_configured", "access_denied"].includes(gmailNotice) ? (
+        <p className="text-destructive text-sm">Eroare Gmail: {gmailNotice}</p>
       ) : null}
 
       {warning ? <p className="text-muted-foreground text-sm">{warning}</p> : null}
@@ -256,16 +236,9 @@ export function LeadCommunicationsPanel({ leadId }: { leadId: string }) {
         </div>
       ) : null}
 
-      {showEmptyEmails ? (
+      {!isPending && communications.length === 0 && !error ? (
         <p className="text-muted-foreground text-sm">
-          Nu apar emailuri până când cel puțin un coleg conectează Gmail. Irina trebuie să intre
-          pe acest lead, tab Comunicări, și să apese Conectează Gmail.
-        </p>
-      ) : null}
-
-      {!isPending && communications.length === 0 && !error && teamSummary.connected.length > 0 ? (
-        <p className="text-muted-foreground text-sm">
-          Nu s-au găsit emailuri pentru acest lead în mailbox-urile conectate.
+          Nu s-au găsit emailuri pentru acest lead.
         </p>
       ) : null}
 

@@ -17,6 +17,7 @@ function sanitizeRedirectPath(value: string | null, leadId: string | null): stri
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const leadId = searchParams.get("leadId");
+  const autoConnect = searchParams.get("auto") === "1";
   const redirect = sanitizeRedirectPath(searchParams.get("redirect"), leadId);
 
   if (!isGmailOAuthConfigured()) {
@@ -31,14 +32,32 @@ export async function GET(request: Request) {
   } = await supabase.auth.getUser();
 
   if (!user) {
+    const connectReturn = new URL("/api/auth/gmail/connect", request.url);
+    if (leadId) {
+      connectReturn.searchParams.set("leadId", leadId);
+    }
+    if (searchParams.get("redirect")?.startsWith("/")) {
+      connectReturn.searchParams.set("redirect", searchParams.get("redirect")!);
+    }
+    if (autoConnect) {
+      connectReturn.searchParams.set("auto", "1");
+    }
+
     const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("redirect", `/api/auth/gmail/connect?leadId=${leadId ?? ""}`);
+    loginUrl.searchParams.set(
+      "redirect",
+      `${connectReturn.pathname}${connectReturn.search}`,
+    );
     return NextResponse.redirect(loginUrl);
   }
 
   try {
     const state = await createGmailOAuthState(user.id, redirect);
-    return NextResponse.redirect(buildGmailAuthUrl(state));
+    return NextResponse.redirect(
+      buildGmailAuthUrl(state, {
+        loginHint: autoConnect ? (user.email ?? undefined) : undefined,
+      }),
+    );
   } catch (error) {
     const target = new URL(redirect, request.url);
     target.searchParams.set(

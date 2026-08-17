@@ -15,9 +15,18 @@ export async function GET(request: Request) {
   const state = searchParams.get("state");
   const oauthError = searchParams.get("error");
 
-  let redirectPath = "/leads";
+  let redirectPath = "/dashboard";
 
   if (oauthError) {
+    if (state) {
+      try {
+        const consumed = await consumeGmailOAuthState(state);
+        redirectPath = consumed.redirectPath;
+      } catch {
+        // Keep default redirect when state is invalid or expired.
+      }
+    }
+
     const target = new URL(redirectPath, request.url);
     target.searchParams.set("gmail", oauthError);
     return NextResponse.redirect(target);

@@ -30,7 +30,10 @@ export function isGmailOAuthConfigured(): boolean {
   }
 }
 
-export function buildGmailAuthUrl(state: string): string {
+export function buildGmailAuthUrl(
+  state: string,
+  options?: { loginHint?: string },
+): string {
   const client = resolveGoogleOAuthClient();
   const params = new URLSearchParams({
     client_id: client.clientId,
@@ -42,6 +45,10 @@ export function buildGmailAuthUrl(state: string): string {
     include_granted_scopes: "true",
     state,
   });
+
+  if (options?.loginHint) {
+    params.set("login_hint", options.loginHint);
+  }
 
   return `${GOOGLE_AUTH_URL}?${params.toString()}`;
 }

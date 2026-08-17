@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { getGmailAutoConnectUrl } from "@/lib/gmail/auto-connect";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
@@ -26,11 +27,16 @@ export async function GET(request: Request) {
           .eq("id", user.id)
           .single();
 
-        if (
-          !profile?.is_system_admin &&
-          profile?.approval_status !== "approved"
-        ) {
+        const isApproved =
+          profile?.is_system_admin || profile?.approval_status === "approved";
+
+        if (!isApproved) {
           redirect = "/permission-approval";
+        } else {
+          const autoConnectUrl = await getGmailAutoConnectUrl(user, redirect, origin);
+          if (autoConnectUrl) {
+            return NextResponse.redirect(autoConnectUrl);
+          }
         }
       }
 
