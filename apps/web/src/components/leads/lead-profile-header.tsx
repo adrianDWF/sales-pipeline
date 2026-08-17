@@ -6,7 +6,7 @@ import {
   getStageBadgeClass,
   getStageLabel,
 } from "@sales-pipeline/shared";
-import { ArrowRight, Building2 } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 
@@ -14,8 +14,10 @@ import {
   advanceLeadStageAction,
   archiveLeadAction,
 } from "@/app/(app)/leads/actions";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { companyFaviconUrl, companyInitials } from "@/lib/company-brand";
 
 function formatDateTime(value: string) {
   return new Date(value).toLocaleString(undefined, {
@@ -31,6 +33,8 @@ export function LeadProfileHeader({ lead }: { lead: LeadDetail }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const nextStage = getNextStage(lead.status as LeadStatus);
+  const label = lead.company?.trim() || lead.name;
+  const favicon = companyFaviconUrl(lead.website_url);
 
   function advance() {
     startTransition(async () => {
@@ -50,9 +54,12 @@ export function LeadProfileHeader({ lead }: { lead: LeadDetail }) {
     <div className="space-y-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex gap-3">
-          <div className="bg-muted flex size-12 shrink-0 items-center justify-center rounded-xl">
-            <Building2 className="text-muted-foreground size-6" />
-          </div>
+          <Avatar className="size-12 rounded-xl">
+            {favicon ? <AvatarImage src={favicon} alt={label} className="rounded-xl" /> : null}
+            <AvatarFallback className="rounded-xl text-sm font-semibold">
+              {companyInitials(lead.company, lead.name)}
+            </AvatarFallback>
+          </Avatar>
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl font-bold">{lead.company || lead.name}</h1>

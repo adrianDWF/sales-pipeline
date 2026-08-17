@@ -123,6 +123,8 @@ export const LeadSchema = z.object({
   cui: z.string().nullable(),
   turnover: z.number().nullable(),
   turnover_year: z.number().int().nullable(),
+  termene_data: z.record(z.unknown()).nullable().optional(),
+  termene_synced_at: z.string().nullable().optional(),
   message: z.string().nullable(),
   form_payload: z.record(z.unknown()),
   external_id: z.string().nullable(),

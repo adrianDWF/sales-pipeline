@@ -19,3 +19,10 @@ export type TermeneCompanyLookup = {
   turnoverYear: number | null;
   isActive: boolean;
 };
+
+export function parseStoredTermeneData(value: unknown): TermeneCompanyLookup | null {
+  if (!value || typeof value !== "object") return null;
+  const data = value as TermeneCompanyLookup;
+  if (!data.cui || !data.name) return null;
+  return data;
+}

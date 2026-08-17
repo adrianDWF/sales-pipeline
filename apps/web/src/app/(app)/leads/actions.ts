@@ -13,6 +13,8 @@ import {
 import { requirePermission, isSuperUser, type CurrentUserAccess } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { fetchTermeneCompany, normalizeCuiInput } from "@/lib/termene";
+import { parseStoredTermeneData } from "@/lib/termene-types";
+import { saveTermeneSnapshotForLead } from "@/lib/termene-sync";
 
 async function canViewLead(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -562,21 +564,18 @@ export async function verifyAndSaveTermeneAction(leadId: string, cuiInput: strin
 
     const { data: existing } = await supabase
       .from("leads")
-      .select("phone, company, website_url")
+      .select("phone, company, website_url, termene_data")
       .eq("id", leadId)
       .single();
 
-    const updates = {
-      cui: company.cui,
-      turnover: company.turnover,
-      turnover_year: company.turnoverYear,
-      company: company.name || existing?.company || null,
-      website_url: company.website ?? existing?.website_url ?? null,
-      phone: existing?.phone?.trim() ? existing.phone : company.phone,
-    };
-
-    const { error } = await supabase.from("leads").update(updates).eq("id", leadId);
-    if (error) return { error: error.message };
+    const previousData = parseStoredTermeneData(existing?.termene_data);
+    await saveTermeneSnapshotForLead({
+      leadId,
+      company,
+      source: "manual",
+      previousData,
+      existingLead: existing,
+    });
 
     revalidateLeadPaths(leadId);
     return { ok: true, company };

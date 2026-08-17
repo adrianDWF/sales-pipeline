@@ -28,6 +28,7 @@ export function LeadCuiField({
   onCuiChange,
   onTurnoverChange,
   onApply,
+  initialStoredData = null,
 }: {
   leadId: string;
   cui: string;
@@ -36,12 +37,13 @@ export function LeadCuiField({
   onCuiChange: (value: string) => void;
   onTurnoverChange: (value: string, year: string) => void;
   onApply: (data: TermeneCompanyLookup) => void;
+  initialStoredData?: TermeneCompanyLookup | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<TermeneCompanyLookup | null>(null);
-  const [saved, setSaved] = useState(false);
+  const [result, setResult] = useState<TermeneCompanyLookup | null>(initialStoredData);
+  const [saved, setSaved] = useState(Boolean(initialStoredData));
 
   function verify() {
     setError(null);
@@ -121,7 +123,8 @@ export function LeadCuiField({
       {saved ? (
         <p className="flex items-center gap-2 text-sm text-green-700">
           <CheckCircle2 className="size-4" />
-          Date Termene salvate automat (CUI, cifră de afaceri, firmă).
+          Date Termene salvate în baza de date
+          {initialStoredData && !isPending ? " (ultima sincronizare Termene)" : ""}.
         </p>
       ) : null}
 

@@ -13,6 +13,7 @@ import {
 import { LeadCuiField } from "@/components/leads/lead-cui-field";
 import type { AssignableUser } from "@/lib/leads";
 import type { TermeneCompanyLookup } from "@/lib/termene-types";
+import { parseStoredTermeneData } from "@/lib/termene-types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -133,6 +134,8 @@ export function LeadProfileForm({
     if (data.phone && !phone.trim()) setPhone(data.phone);
   }
 
+  const storedTermene = parseStoredTermeneData(lead.termene_data);
+
   return (
     <div className="space-y-6">
       <section className="space-y-4">
@@ -159,6 +162,7 @@ export function LeadProfileForm({
               cui={cui}
               turnover={turnover}
               turnoverYear={turnoverYear}
+              initialStoredData={storedTermene}
               onCuiChange={setCui}
               onTurnoverChange={(value, year) => {
                 setTurnover(value);

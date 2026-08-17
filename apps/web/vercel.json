@@ -2,5 +2,11 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "cd ../.. && pnpm install --filter @sales-pipeline/web...",
   "buildCommand": "cd ../.. && ./scripts/build-web.sh",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "crons": [
+    {
+      "path": "/api/cron/termene-sync",
+      "schedule": "0 5 * * 1"
+    }
+  ]
 }

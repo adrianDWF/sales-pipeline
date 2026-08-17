@@ -73,6 +73,7 @@ add_env "$API_PROJECT" "TOKEN_ENCRYPTION_KEY" "$TOKEN"
 add_env "$API_PROJECT" "LEAD_WEBHOOK_SECRET" "$WEBHOOK"
 if [[ -n "$CRON" ]]; then
   add_env "$API_PROJECT" "CRON_SECRET" "$CRON"
+  add_env "$WEB_PROJECT" "CRON_SECRET" "$CRON"
 fi
 
 echo "Vercel env sync complete."

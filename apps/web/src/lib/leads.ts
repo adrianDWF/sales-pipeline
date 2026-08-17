@@ -25,6 +25,8 @@ const LEAD_SELECT = `
   cui,
   turnover,
   turnover_year,
+  termene_data,
+  termene_synced_at,
   message,
   form_payload,
   external_id,

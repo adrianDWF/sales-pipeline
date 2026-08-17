@@ -20,6 +20,7 @@ import { DataTableMRT } from "@/components/common/data-table-mrt";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { companyFaviconUrl, companyInitials } from "@/lib/company-brand";
 import { cn } from "@/lib/utils";
 
 /** 8-column grid: company + contact get 2 units each; others get ~1 unit. */
@@ -54,26 +55,6 @@ function initials(name: string | null | undefined, email: string | null | undefi
     .slice(0, 2)
     .map((p) => p[0]?.toUpperCase() ?? "")
     .join("");
-}
-
-function companyInitials(company: string | null | undefined, contact: string) {
-  const source = company?.trim() || contact;
-  return source
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase() ?? "")
-    .join("");
-}
-
-function companyFaviconUrl(websiteUrl: string | null | undefined) {
-  if (!websiteUrl?.trim()) return undefined;
-  try {
-    const url = websiteUrl.startsWith("http") ? websiteUrl : `https://${websiteUrl}`;
-    const host = new URL(url).hostname;
-    return `https://www.google.com/s2/favicons?domain=${host}&sz=64`;
-  } catch {
-    return undefined;
-  }
 }
 
 function CompanyCell({ lead }: { lead: LeadWithAssignee }) {
