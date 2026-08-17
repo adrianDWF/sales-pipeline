@@ -23,6 +23,8 @@ const LEAD_SELECT = `
   company,
   website_url,
   cui,
+  turnover,
+  turnover_year,
   message,
   form_payload,
   external_id,

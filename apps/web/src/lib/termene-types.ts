@@ -15,5 +15,7 @@ export type TermeneCompanyLookup = {
   phone: string | null;
   website: string | null;
   shareCapital: number | null;
+  turnover: number | null;
+  turnoverYear: number | null;
   isActive: boolean;
 };

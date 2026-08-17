@@ -29,6 +29,41 @@ export function normalizeCuiInput(input: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function readNestedNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (value && typeof value === "object" && "valoare" in value) {
+    return readNumber((value as { valoare?: unknown }).valoare);
+  }
+  return null;
+}
+
+function parseLatestTurnover(data: Record<string, unknown>): {
+  turnover: number | null;
+  turnoverYear: number | null;
+} {
+  const bilanturi = data.bilanturi_mfinante_scurte as Record<string, unknown> | undefined;
+  if (!bilanturi) return { turnover: null, turnoverYear: null };
+
+  const years = Object.keys(bilanturi)
+    .filter((key) => /^an_\d{4}$/.test(key))
+    .map((key) => Number.parseInt(key.replace("an_", ""), 10))
+    .filter((year) => Number.isFinite(year));
+
+  const latestYear = years.length > 0 ? Math.max(...years) : null;
+
+  const ultimul = bilanturi.ultimul_raportat as Record<string, unknown> | undefined;
+  const turnoverFromLatest =
+    readNestedNumber(ultimul?.cifra_de_afaceri_neta) ??
+    (latestYear != null
+      ? readNestedNumber(
+          (bilanturi[`an_${latestYear}`] as Record<string, unknown> | undefined)
+            ?.cifra_de_afaceri_neta,
+        )
+      : null);
+
+  return { turnover: turnoverFromLatest, turnoverYear: latestYear };
+}
+
 export function parseTermeneResponse(payload: unknown): TermeneCompanyLookup | null {
   if (!payload || typeof payload !== "object") return null;
 
@@ -95,6 +130,7 @@ export function parseTermeneResponse(payload: unknown): TermeneCompanyLookup | n
   const registrationDate = readString(dataInfiintarii?.data);
   const shareCapital = readNumber(firma?.capital_social);
   const isActive = fiscalStatus?.toLowerCase().includes("activ") ?? false;
+  const { turnover, turnoverYear } = parseLatestTurnover(data);
 
   return {
     cui,
@@ -113,6 +149,8 @@ export function parseTermeneResponse(payload: unknown): TermeneCompanyLookup | n
     phone: phone ?? null,
     website,
     shareCapital,
+    turnover,
+    turnoverYear,
     isActive,
   };
 }

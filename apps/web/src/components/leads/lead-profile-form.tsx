@@ -52,6 +52,12 @@ export function LeadProfileForm({
   const [phone, setPhone] = useState(lead.phone ?? "");
   const [message, setMessage] = useState(lead.message ?? "");
   const [cui, setCui] = useState(lead.cui ?? "");
+  const [turnover, setTurnover] = useState(
+    lead.turnover != null ? String(lead.turnover) : "",
+  );
+  const [turnoverYear, setTurnoverYear] = useState(
+    lead.turnover_year != null ? String(lead.turnover_year) : "",
+  );
   const [priority, setPriority] = useState<LeadPriority>(lead.priority);
   const [status, setStatus] = useState<LeadStatus>(lead.status as LeadStatus);
   const [assignedTo, setAssignedTo] = useState(lead.assigned_to ?? "unassigned");
@@ -83,6 +89,8 @@ export function LeadProfileForm({
         phone: phone || null,
         message: message || null,
         cui: cui || null,
+        turnover: turnover ? Number(turnover) : null,
+        turnover_year: turnoverYear ? Number(turnoverYear) : null,
         priority,
         status,
         assigned_to: assignedTo === "unassigned" ? null : assignedTo,
@@ -118,6 +126,8 @@ export function LeadProfileForm({
 
   function applyTermeneData(data: TermeneCompanyLookup) {
     setCui(data.cui);
+    if (data.turnover != null) setTurnover(String(data.turnover));
+    if (data.turnoverYear != null) setTurnoverYear(String(data.turnoverYear));
     if (data.name) setCompany(data.name);
     if (data.website) setWebsiteUrl(data.website);
     if (data.phone && !phone.trim()) setPhone(data.phone);
@@ -144,7 +154,18 @@ export function LeadProfileForm({
             <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
           </Field>
           <div className="sm:col-span-2">
-            <LeadCuiField cui={cui} onCuiChange={setCui} onApply={applyTermeneData} />
+            <LeadCuiField
+              leadId={lead.id}
+              cui={cui}
+              turnover={turnover}
+              turnoverYear={turnoverYear}
+              onCuiChange={setCui}
+              onTurnoverChange={(value, year) => {
+                setTurnover(value);
+                setTurnoverYear(year);
+              }}
+              onApply={applyTermeneData}
+            />
           </div>
         </div>
         <Field label="Mesaj / detalii">

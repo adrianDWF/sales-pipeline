@@ -544,3 +544,44 @@ export async function lookupTermeneCompanyAction(cuiInput: string) {
     return { error: message };
   }
 }
+
+export async function verifyAndSaveTermeneAction(leadId: string, cuiInput: string) {
+  const access = await requirePermission("portfolio");
+  const canManageAll = access.permissions.clients_manage;
+  const supabase = await createClient();
+
+  if (!(await canEditLead(supabase, leadId, access.profile.id, canManageAll))) {
+    return { error: "You cannot update this lead" };
+  }
+
+  const cui = normalizeCuiInput(cuiInput);
+  if (!cui) return { error: "Introdu un CUI valid" };
+
+  try {
+    const company = await fetchTermeneCompany(cui);
+
+    const { data: existing } = await supabase
+      .from("leads")
+      .select("phone, company, website_url")
+      .eq("id", leadId)
+      .single();
+
+    const updates = {
+      cui: company.cui,
+      turnover: company.turnover,
+      turnover_year: company.turnoverYear,
+      company: company.name || existing?.company || null,
+      website_url: company.website ?? existing?.website_url ?? null,
+      phone: existing?.phone?.trim() ? existing.phone : company.phone,
+    };
+
+    const { error } = await supabase.from("leads").update(updates).eq("id", leadId);
+    if (error) return { error: error.message };
+
+    revalidateLeadPaths(leadId);
+    return { ok: true, company };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Termene lookup failed";
+    return { error: message };
+  }
+}
