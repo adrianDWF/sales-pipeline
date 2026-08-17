@@ -8,10 +8,12 @@ import {
   type PipelineKpis,
 } from "@sales-pipeline/shared";
 
+import { cache } from "react";
+
 import type { CurrentUserAccess } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 
-const LEAD_SELECT = `
+const LEAD_LIST_SELECT = `
   id,
   created_at,
   updated_at,
@@ -25,8 +27,6 @@ const LEAD_SELECT = `
   cui,
   turnover,
   turnover_year,
-  termene_data,
-  termene_synced_at,
   message,
   form_payload,
   external_id,
@@ -39,6 +39,12 @@ const LEAD_SELECT = `
     full_name,
     email
   )
+`;
+
+const LEAD_SELECT = `
+  ${LEAD_LIST_SELECT},
+  termene_data,
+  termene_synced_at
 `;
 
 const LEAD_DETAIL_SELECT = `
@@ -79,7 +85,8 @@ function parseLeadRow(row: Record<string, unknown>): LeadWithAssignee {
   return parsed;
 }
 
-export async function getLeadsForUser(
+// Request-scoped: leads page calls this via facets/kpis/list — dedupe to one DB round-trip.
+export const getLeadsForUser = cache(async function getLeadsForUser(
   _access: CurrentUserAccess,
   filters: LeadFilters = {},
 ): Promise<LeadWithAssignee[]> {
@@ -87,7 +94,7 @@ export async function getLeadsForUser(
   const supabase = await createClient();
   let query = supabase
     .from("leads")
-    .select(`${LEAD_SELECT}, lead_services(count)`)
+    .select(`${LEAD_LIST_SELECT}, lead_services(count)`)
     .order("created_at", { ascending: false });
 
   if (filters.ownerId && filters.ownerId !== "all") {
@@ -115,11 +122,9 @@ export async function getLeadsForUser(
     const servicesCount = countRow.lead_services?.[0]?.count ?? 0;
     return parseLeadRow({ ...row, services_count: servicesCount });
   });
-}
+});
 
-export async function getLeadFacets(_access: CurrentUserAccess): Promise<LeadFacets> {
-  void _access;
-  const leads = await getLeadsForUser(_access);
+export function computeLeadFacets(leads: LeadWithAssignee[]): LeadFacets {
   const byOwner: Record<string, number> = {};
   const byStatus: Record<string, number> = {};
   let unassigned = 0;
@@ -138,6 +143,12 @@ export async function getLeadFacets(_access: CurrentUserAccess): Promise<LeadFac
   }
 
   return { byOwner, byStatus, unassigned, newLeadUnassigned };
+}
+
+export async function getLeadFacets(_access: CurrentUserAccess): Promise<LeadFacets> {
+  void _access;
+  const leads = await getLeadsForUser(_access);
+  return computeLeadFacets(leads);
 }
 
 export async function getPipelineKpis(_access: CurrentUserAccess): Promise<PipelineKpis> {

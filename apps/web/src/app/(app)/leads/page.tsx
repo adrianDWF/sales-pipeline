@@ -4,11 +4,11 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/common/page-header";
 import { LeadsWorkspace } from "@/components/leads/leads-workspace";
 import {
+  computeLeadFacets,
   getAssignableUsers,
-  getLeadFacets,
   getLeadsForUser,
-  getPipelineKpis,
 } from "@/lib/leads";
+import { summarizePipeline } from "@sales-pipeline/shared";
 import { getCurrentUserAccess } from "@/lib/permissions";
 
 export default async function LeadsPage() {
@@ -16,12 +16,12 @@ export default async function LeadsPage() {
   if (!access) redirect("/login?redirect=/leads");
   if (!access.permissions.portfolio) redirect("/permission-approval");
 
-  const [leads, assignableUsers, facets, kpis] = await Promise.all([
+  const [leads, assignableUsers] = await Promise.all([
     getLeadsForUser(access),
     getAssignableUsers(),
-    getLeadFacets(access),
-    getPipelineKpis(access),
   ]);
+  const facets = computeLeadFacets(leads);
+  const kpis = summarizePipeline(leads);
 
   return (
     <div className="space-y-5">

@@ -248,10 +248,14 @@ export function LeadsPipelineTable({ leads }: { leads: LeadWithAssignee[] }) {
         fluidColumnsUntil={8}
         fluidLayoutMinWidth={1200}
         emptyMessage="No leads match the current filters."
-        muiTableBodyRowProps={({ row }) => ({
-          onClick: () => router.push(`/leads/${row.original.id}`),
-          sx: { cursor: "pointer" },
-        })}
+        muiTableBodyRowProps={({ row }) => {
+          const href = `/leads/${row.original.id}`;
+          return {
+            onClick: () => router.push(href),
+            onMouseEnter: () => router.prefetch(href),
+            sx: { cursor: "pointer" },
+          };
+        }}
       />
     </div>
   );
