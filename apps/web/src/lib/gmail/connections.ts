@@ -17,6 +17,60 @@ export type StoredGmailConnection = {
   token_expires_at: string | null;
 };
 
+export async function getTeamGmailSummary() {
+  const admin = createAdminClient();
+  const [{ data: profiles, error: profilesError }, { data: connections, error: connectionsError }] =
+    await Promise.all([
+      admin
+        .from("profiles")
+        .select("id, full_name, email")
+        .eq("approval_status", "approved"),
+      admin.from("user_gmail_connections").select("user_id, google_email, connected_at"),
+    ]);
+
+  if (profilesError) {
+    throw new Error(profilesError.message);
+  }
+  if (connectionsError) {
+    throw new Error(connectionsError.message);
+  }
+
+  const profileById = new Map(
+    (profiles ?? []).map((profile) => [profile.id as string, profile]),
+  );
+  const connectedUserIds = new Set(
+    (connections ?? []).map((connection) => connection.user_id as string),
+  );
+
+  const connected = (connections ?? [])
+    .filter((connection) => !isExcludedGmailEmail(connection.google_email as string))
+    .map((connection) => {
+      const profile = profileById.get(connection.user_id as string);
+      return {
+        userId: connection.user_id as string,
+        fullName: (profile?.full_name as string | null) ?? null,
+        googleEmail: connection.google_email as string,
+        connectedAt: connection.connected_at as string,
+      };
+    })
+    .sort((a, b) => a.fullName?.localeCompare(b.fullName ?? "") ?? 0);
+
+  const pending = (profiles ?? [])
+    .filter((profile) => {
+      const email = profile.email as string | null;
+      if (!email || isExcludedGmailEmail(email)) return false;
+      return !connectedUserIds.has(profile.id as string);
+    })
+    .map((profile) => ({
+      userId: profile.id as string,
+      fullName: (profile.full_name as string | null) ?? null,
+      email: profile.email as string,
+    }))
+    .sort((a, b) => a.fullName?.localeCompare(b.fullName ?? "") ?? 0);
+
+  return { connected, pending };
+}
+
 export async function listTeamGmailConnections(): Promise<StoredGmailConnection[]> {
   const admin = createAdminClient();
   const { data, error } = await admin

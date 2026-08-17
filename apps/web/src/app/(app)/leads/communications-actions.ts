@@ -3,12 +3,15 @@
 import {
   GmailConnectionStatusSchema,
   LeadCommunicationSchema,
+  TeamGmailSummarySchema,
   type GmailConnectionStatus,
   type LeadCommunication,
+  type TeamGmailSummary,
 } from "@sales-pipeline/shared";
 
 import { fetchLeadCommunications } from "@/lib/gmail/fetch-lead-communications";
-import { getGmailConnectionForUser } from "@/lib/gmail/connections";
+import { getGmailConnectionForUser, getTeamGmailSummary } from "@/lib/gmail/connections";
+import { isExcludedGmailEmail } from "@/lib/gmail/config";
 import { requirePermission } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 
@@ -46,12 +49,16 @@ export async function getLeadCommunicationsAction(leadId: string): Promise<
       communications: LeadCommunication[];
       warning?: string;
       gmailStatus: GmailConnectionStatus;
+      teamSummary: TeamGmailSummary;
+      canConnectGmail: boolean;
     }
   | { error: string }
 > {
   const access = await requirePermission("portfolio");
   const supabase = await createClient();
   const canManageAll = access.permissions.clients_manage;
+  const profileEmail = access.profile.email ?? "";
+  const canConnectGmail = Boolean(profileEmail) && !isExcludedGmailEmail(profileEmail);
 
   if (!(await canViewLead(supabase, leadId, access.profile.id, canManageAll))) {
     return { error: "Nu poți vedea comunicările acestui lead" };
@@ -66,7 +73,11 @@ export async function getLeadCommunicationsAction(leadId: string): Promise<
   if (error) return { error: error.message };
   if (!lead) return { error: "Lead negăsit" };
 
-  const connection = await getGmailConnectionForUser(access.profile.id);
+  const [connection, teamSummary] = await Promise.all([
+    getGmailConnectionForUser(access.profile.id),
+    getTeamGmailSummary(),
+  ]);
+
   const gmailStatus = GmailConnectionStatusSchema.parse({
     connected: Boolean(connection),
     googleEmail: connection?.google_email ?? null,
@@ -88,6 +99,8 @@ export async function getLeadCommunicationsAction(leadId: string): Promise<
       communications,
       warning: result.warning,
       gmailStatus,
+      teamSummary: TeamGmailSummarySchema.parse(teamSummary),
+      canConnectGmail,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Nu s-au putut încărca emailurile";

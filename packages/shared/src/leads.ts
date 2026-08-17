@@ -410,3 +410,27 @@ export const GmailConnectionStatusSchema = z.object({
 });
 
 export type GmailConnectionStatus = z.infer<typeof GmailConnectionStatusSchema>;
+
+export const TeamGmailMailboxSchema = z.object({
+  userId: z.string().uuid(),
+  fullName: z.string().nullable(),
+  googleEmail: z.string().email(),
+  connectedAt: z.string(),
+});
+
+export type TeamGmailMailbox = z.infer<typeof TeamGmailMailboxSchema>;
+
+export const TeamGmailPendingSchema = z.object({
+  userId: z.string().uuid(),
+  fullName: z.string().nullable(),
+  email: z.string().email(),
+});
+
+export type TeamGmailPending = z.infer<typeof TeamGmailPendingSchema>;
+
+export const TeamGmailSummarySchema = z.object({
+  connected: z.array(TeamGmailMailboxSchema),
+  pending: z.array(TeamGmailPendingSchema),
+});
+
+export type TeamGmailSummary = z.infer<typeof TeamGmailSummarySchema>;

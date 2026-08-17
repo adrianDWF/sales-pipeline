@@ -33,7 +33,7 @@ export async function fetchLeadCommunications(input: {
   if (connections.length === 0) {
     return {
       communications: [],
-      warning: "Niciun coleg nu are Gmail conectat încă.",
+      warning: "Niciun coleg nu are Gmail conectat încă. Fiecare coleg trebuie să apese «Conectează Gmail» în acest tab (login cu Google nu e suficient).",
     };
   }
 
